@@ -1,0 +1,153 @@
+.App {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+:root {
+  --seashell: #fff5ee;
+  --garnet: #8b1e3f;
+  --afternoon: #f4a261;
+  --ink: #0f172a;
+}
+
+/* Two-column layout:
+   - Left: questions + marks + race progress
+   - Right: answer input area
+   Responsive: stacks vertically under 900px */
+.race-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.race-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
+}
+
+.race-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.race-left {
+  flex: 0 0 42%;
+  min-width: 280px;
+}
+
+.race-right {
+  flex: 1 1 auto;
+  min-width: 320px;
+}
+
+.marks-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.marks-table th {
+  text-align: left;
+  color: #64748b;
+  font-weight: 800;
+  padding: 10px 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.marks-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #0f172a;
+}
+
+.marks-table tbody tr {
+  transition: background-color 150ms ease;
+}
+
+.marks-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.home-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.home-left {
+  flex: 0 0 42%;
+  min-width: 280px;
+}
+
+.home-right {
+  flex: 1 1 auto;
+  min-width: 320px;
+}
+
+.home-card {
+  background: var(--seashell);
+  border: 1px solid rgba(139, 30, 63, 0.18);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
+}
+
+.home-button {
+  border: 1px solid rgba(139, 30, 63, 0.28);
+  background: var(--seashell);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 140ms ease, background-color 140ms ease, border-color 140ms ease;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+  color: var(--garnet);
+}
+
+.home-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+  background-color: var(--afternoon);
+  border-color: rgba(139, 30, 63, 0.55);
+  color: var(--ink);
+}
+
+.home-button:focus-visible {
+  outline: 3px solid rgba(139, 30, 63, 0.35);
+  outline-offset: 2px;
+}
+
+.home-button[data-active="true"] {
+  border-color: rgba(139, 30, 63, 0.9);
+  background-color: var(--garnet);
+  color: var(--seashell);
+}
+
+@media (max-width: 900px) {
+  .race-layout {
+    flex-direction: column;
+  }
+
+  .race-left,
+  .race-right {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .home-layout {
+    flex-direction: column;
+  }
+
+  .home-left,
+  .home-right {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
