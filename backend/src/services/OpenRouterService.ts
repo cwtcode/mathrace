@@ -158,4 +158,86 @@ export class OpenRouterService {
       return null;
     }
   }
+
+  public static async generateAnalyticsFeedback(
+    summary: {
+      totalAnswered: number;
+      totalCorrect: number;
+      accuracy: number;
+      breakdownByType: Array<{ questionType: string; totalAnswered: number; correct: number }>;
+      seriesDaily: Array<{ label: string; totalAnswered: number; correct: number }>;
+      category?: string;
+      questionType?: string;
+      fromMs?: number;
+      toMs?: number;
+    },
+    model: string = DEFAULT_MODEL
+  ): Promise<string | null> {
+    if (!OPENROUTER_API_KEY) return null;
+
+    const prompt = `
+      You are an analytics coach for a learning game. Analyze the user's performance patterns and give personalized recommendations.
+      Keep it 5-8 short sentences. Mention:
+      1) One strength
+      2) One weakness or risk pattern
+      3) Two concrete practice tips
+      4) One small goal for next session
+      Use simple, encouraging language. No markdown.
+
+      Filters:
+      - category: ${summary.category ?? 'all'}
+      - questionType: ${summary.questionType ?? 'all'}
+      - fromMs: ${summary.fromMs ?? 'none'}
+      - toMs: ${summary.toMs ?? 'none'}
+
+      Totals:
+      - totalAnswered: ${summary.totalAnswered}
+      - totalCorrect: ${summary.totalCorrect}
+      - accuracy: ${Math.round(summary.accuracy * 100)}%
+
+      Breakdown by question type (type, answered, correct):
+      ${summary.breakdownByType.map((r) => `- ${r.questionType}: ${r.totalAnswered}, ${r.correct}`).join('\n')}
+
+      Daily trend (label, answered, correct):
+      ${summary.seriesDaily.map((p) => `- ${p.label}: ${p.totalAnswered}, ${p.correct}`).join('\n')}
+
+      Return ONLY a JSON object with:
+      - feedback: string
+    `;
+
+    try {
+      const response = await axios.post(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.6,
+          max_tokens: 360,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'HTTP-Referer': 'https://math-racers.example.com',
+            'X-Title': 'Math Racers',
+            'Content-Type': 'application/json',
+          },
+          timeout: 15000,
+        }
+      );
+
+      const content = response.data.choices[0]?.message?.content;
+      if (!content) throw new Error('Empty response from OpenRouter');
+
+      const parsed = this.parseJsonObject(String(content));
+      const feedback = String(parsed.feedback ?? '').trim();
+      return feedback ? feedback : null;
+    } catch (error: any) {
+      if (error.response) {
+        console.error(`OpenRouter API Error: ${error.response.status}`);
+      } else {
+        console.error(`OpenRouter Integration Error: ${error.message}`);
+      }
+      return null;
+    }
+  }
 }

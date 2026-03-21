@@ -5,7 +5,9 @@ import RaceTrack from './RaceTrack';
 import ResultsScreen from './ResultsScreen';
 import HomeDashboard from './HomeDashboard';
 import ComboMeter from './ComboMeter';
+import PerformanceDashboard from './PerformanceDashboard';
 import { addPoints, getProfile, PlayerProfile, CHARACTERS } from '../utils/storage';
+import { getClientId } from '../utils/clientId';
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 type Category = 'number' | 'measures' | 'shape';
@@ -55,7 +57,7 @@ const RaceInterface: React.FC = () => {
   const [userInput, setUserInput] = useState('');
   const [playerProgress, setPlayerProgress] = useState(0);
   const [ghostProgress, setGhostProgress] = useState(0);
-  const [gameState, setGameState] = useState<'setup' | 'playing' | 'won' | 'lost' | 'ended'>('setup');
+  const [gameState, setGameState] = useState<'setup' | 'dashboard' | 'playing' | 'won' | 'lost' | 'ended'>('setup');
   const [errorCount, setErrorCount] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [isSpeedingUp, setIsSpeedingUp] = useState(false);
@@ -177,18 +179,41 @@ const RaceInterface: React.FC = () => {
     }
   }, [sessionPoints, questionHistory, maxCombo, category, difficulty, ghostPace, gameState, aiFeedbackLoading]);
 
-  const reportAnswerSubmitted = useCallback((timestampMs: number) => {
-    window.dispatchEvent(new CustomEvent('answer-submitted', { detail: { timestampMs } }));
+  const reportAnswerSubmitted = useCallback((payload: {
+    timestampMs: number;
+    outcome: 'correct' | 'wrong' | 'timeout';
+    questionType: 'fill_in_blank' | 'multiple_choice' | 'true_false' | 'essay' | 'unknown';
+    category: Category;
+    difficulty: Difficulty;
+  }) => {
+    window.dispatchEvent(new CustomEvent('answer-submitted', { detail: payload }));
     fetch(`${API_BASE_URL}/stats/answers`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ timestampMs }),
+      body: JSON.stringify({ timestampMs: payload.timestampMs }),
     }).catch((e) => console.error('[Stats] Failed to report answer:', e));
+
+    fetch(`${API_BASE_URL}/analytics/answer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientId: getClientId(),
+        timestampMs: payload.timestampMs,
+        outcome: payload.outcome,
+        questionType: payload.questionType,
+        category: payload.category,
+        difficulty: payload.difficulty,
+      }),
+    }).catch((e) => console.error('[Analytics] Failed to report answer:', e));
   }, []);
 
   const generateLocalQuestion = useCallback(() => {
     console.log(`[Question] Generating local question for ${category} / ${difficulty}`);
-    let a, b, op, ans, question;
+    let a = 1;
+    let b = 1;
+    let op: string = '+';
+    let ans = 2;
+    let question = '1 + 1';
     let maxNum = 10;
     if (difficulty === 'medium') maxNum = 20;
     if (difficulty === 'hard') maxNum = 50;
@@ -323,7 +348,13 @@ const RaceInterface: React.FC = () => {
         comboAwardedForQuestionRef.current = true;
         awaitingNextQuestionRef.current = true;
         console.log(`[Input] Correct answer: ${newInput}`);
-        reportAnswerSubmitted(Date.now());
+        reportAnswerSubmitted({
+          timestampMs: Date.now(),
+          outcome: 'correct',
+          questionType: 'fill_in_blank',
+          category,
+          difficulty,
+        });
         setComboCount((c) => {
           const next = c + 1;
           setMaxCombo((m) => Math.max(m, next));
@@ -361,7 +392,13 @@ const RaceInterface: React.FC = () => {
       } else if (newInput.length >= correctAnswer.toString().length) {
         // Wrong answer
         console.log(`[Input] Incorrect answer: ${newInput} (Expected: ${correctAnswer})`);
-        reportAnswerSubmitted(Date.now());
+        reportAnswerSubmitted({
+          timestampMs: Date.now(),
+          outcome: 'wrong',
+          questionType: 'fill_in_blank',
+          category,
+          difficulty,
+        });
         setComboCount(0);
         setQuestionHistory(prev => ([
           {
@@ -467,7 +504,13 @@ const RaceInterface: React.FC = () => {
 
       if (remaining === 0 && !questionTimeoutFired.current) {
         questionTimeoutFired.current = true;
-        reportAnswerSubmitted(Date.now());
+        reportAnswerSubmitted({
+          timestampMs: Date.now(),
+          outcome: 'timeout',
+          questionType: 'fill_in_blank',
+          category,
+          difficulty,
+        });
         setComboCount(0);
         awaitingNextQuestionRef.current = true;
         setFeedback('incorrect');
@@ -536,6 +579,12 @@ const RaceInterface: React.FC = () => {
           </section>
 
           <section className="home-right" aria-label="Game selection">
+            <div className="home-card" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+              <button type="button" className="home-button" onClick={() => setGameState('dashboard')}>
+                View Dashboard
+              </button>
+            </div>
+
             <div className="home-card" style={{ marginBottom: '16px' }}>
               <div style={{ color: '#64748b', fontWeight: 900, marginBottom: '10px' }}>Select Strand</div>
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -622,6 +671,15 @@ const RaceInterface: React.FC = () => {
           </section>
         </div>
       </div>
+    );
+  }
+
+  if (gameState === 'dashboard') {
+    return (
+      <PerformanceDashboard
+        apiBaseUrl={API_BASE_URL}
+        onBack={() => setGameState('setup')}
+      />
     );
   }
 
