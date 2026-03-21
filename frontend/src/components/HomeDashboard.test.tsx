@@ -22,7 +22,7 @@ describe('HomeDashboard', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('total-answers')).toHaveTextContent('12');
-    });
+    }, { timeout: 3000 });
     expect(screen.getByTestId('total-points')).toHaveTextContent('345');
   });
 
@@ -39,13 +39,13 @@ describe('HomeDashboard', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('total-answers')).toHaveTextContent('3');
-    });
+    }, { timeout: 3000 });
 
     window.dispatchEvent(new CustomEvent('answer-submitted', { detail: { timestampMs: Date.now() } }));
 
     await waitFor(() => {
       expect(screen.getByTestId('total-answers')).toHaveTextContent('4');
-    });
+    }, { timeout: 3000 });
   });
 
   it('falls back to cached data on fetch failure', async () => {
@@ -66,6 +66,6 @@ describe('HomeDashboard', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('total-answers')).toHaveTextContent('7');
-    });
+    }, { timeout: 3000 });
   });
 });

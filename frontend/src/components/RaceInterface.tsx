@@ -28,7 +28,19 @@ interface QuestionHistoryItem {
   outcome: QuestionOutcome;
 }
 
-const API_BASE_URL = 'http://localhost:5005/api';
+const GHOST_SPEEDS: Record<Difficulty, number> = {
+  easy: 0.2,
+  medium: 0.5,
+  hard: 0.8
+};
+
+const GHOST_TICK_MS: Record<GhostPace, number> = {
+  slow: 200,
+  normal: 100,
+  fast: 60,
+};
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 const RaceInterface: React.FC = () => {
   const QUESTION_TIME_LIMIT_SECONDS = 8;
@@ -67,22 +79,11 @@ const RaceInterface: React.FC = () => {
   // Get current character icon
   const currentRacerIcon = CHARACTERS.find(c => c.id === profile.currentCharacter)?.icon || '🚗';
 
-  // Ghost speed mapping
-  const GHOST_SPEEDS: Record<Difficulty, number> = {
-    easy: 0.2,
-    medium: 0.5,
-    hard: 0.8
-  };
-
-  const GHOST_TICK_MS: Record<GhostPace, number> = {
-    slow: 200,
-    normal: 100,
-    fast: 60,
-  };
-
   const playCorrectSound = () => {
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -105,19 +106,6 @@ const RaceInterface: React.FC = () => {
     const speedBonus = Math.max(0, (5000 - timeTaken) / 50); // Bonus if answered under 5s
     return Math.floor((basePoints + speedBonus) * difficultyMultiplier);
   }, [difficulty]);
-
-  const handleGameOver = useCallback((finalState: 'won' | 'lost') => {
-    console.log(`[Game] Game over: ${finalState}`);
-    setGameState(finalState);
-    if (finalState === 'won' || finalState === 'lost') {
-      setSessionPoints(currentPoints => {
-        const { newUnlocks: unlocks } = addPoints(currentPoints);
-        setProfile(getProfile());
-        setNewUnlocks(unlocks);
-        return currentPoints;
-      });
-    }
-  }, []);
 
   const handleBackToHome = useCallback(() => {
     setUserInput('');
@@ -181,7 +169,7 @@ const RaceInterface: React.FC = () => {
       });
       const data = await r.json();
       setAiFeedback(String(data?.feedback ?? ''));
-    } catch (e) {
+    } catch {
       setAiFeedback('Great effort! Keep practicing and try to beat your best combo next time.');
     } finally {
       setAiFeedbackLoading(false);
@@ -467,7 +455,7 @@ const RaceInterface: React.FC = () => {
     }, GHOST_TICK_MS[ghostPace]);
 
     return () => clearInterval(timer);
-  }, [gameState, difficulty, ghostPace, GHOST_SPEEDS, GHOST_TICK_MS]);
+  }, [gameState, difficulty, ghostPace]);
 
   useEffect(() => {
     if (gameState !== 'playing') return;

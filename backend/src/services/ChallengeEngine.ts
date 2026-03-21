@@ -13,13 +13,14 @@ export class ChallengeEngine {
     const aiQuestion = await OpenRouterService.generateQuestion(category, difficulty);
     
     if (aiQuestion) {
-      return {
+      const problem: MathProblem = {
         id: uuidv4(),
         question: aiQuestion.question,
         answer: aiQuestion.answer,
         level,
-        explanation: aiQuestion.explanation
       };
+      if (aiQuestion.explanation) problem.explanation = aiQuestion.explanation;
+      return problem;
     }
 
     // Fallback to rule-based generation
@@ -65,7 +66,7 @@ export class ChallengeEngine {
         { name: 'Square', sides: 4 },
         { name: 'Pentagon', sides: 5 }
       ];
-      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      const shape = shapes[Math.floor(Math.random() * shapes.length)] ?? shapes[0]!;
       answer = shape.sides;
       question = `${shape.name} sides?`;
     }

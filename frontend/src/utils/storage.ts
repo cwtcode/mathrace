@@ -28,7 +28,7 @@ export const getProfile = (): PlayerProfile => {
   if (!stored) return DEFAULT_PROFILE;
   try {
     return JSON.parse(stored);
-  } catch (e) {
+  } catch {
     return DEFAULT_PROFILE;
   }
 };

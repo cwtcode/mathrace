@@ -14,9 +14,6 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   question, 
   answer, 
   feedback, 
-  errorCount = 0, 
-  operands,
-  explanation,
   showAnswer = true
 }) => {
   const getFeedbackStyles = () => {
@@ -27,14 +24,6 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       return { backgroundColor: '#fee2e2', animation: 'shake 0.5s' };
     }
     return { backgroundColor: '#f3f4f6' };
-  };
-
-  const renderVisualAid = (num: number, color: string) => {
-    if (num > 20) return <span style={{ fontSize: '1rem', color }}>({num})</span>;
-    const icon = operands?.operator === '*' ? '⭐' : '🍎';
-    return Array.from({ length: num }).map((_, i) => (
-      <span key={i} style={{ fontSize: '1.2rem', color }}>{icon}</span>
-    ));
   };
 
   return (

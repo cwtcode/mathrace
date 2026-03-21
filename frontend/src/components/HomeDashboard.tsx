@@ -17,6 +17,8 @@ interface AnswersStatsResponse {
 const CACHE_TTL_MS = 30_000;
 const cacheKey = (range: StatsRange) => `math_racers_answers_stats_${range}`;
 
+const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+
 const pad2 = (n: number) => String(n).padStart(2, '0');
 const toDayKey = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const toMonthKey = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
@@ -86,7 +88,7 @@ const saveCached = (range: StatsRange, data: AnswersStatsResponse) => {
   localStorage.setItem(cacheKey(range), JSON.stringify({ ts: Date.now(), data }));
 };
 
-const bumpCached = (range: StatsRange, timestampMs: number) => {
+const bumpCached = (range: StatsRange) => {
   const cached = loadCached(range);
   if (!cached) return null;
 
@@ -105,8 +107,13 @@ const bumpCached = (range: StatsRange, timestampMs: number) => {
   return next;
 };
 
+const getErrorMessage = (e: unknown) => {
+  if (e instanceof Error) return e.message;
+  return String(e);
+};
+
 export default function HomeDashboard({
-  apiBaseUrl = 'http://localhost:5005/api',
+  apiBaseUrl = DEFAULT_API_BASE_URL,
   totalPoints = 0,
 }: {
   apiBaseUrl?: string;
@@ -122,6 +129,7 @@ export default function HomeDashboard({
   const [error, setError] = useState<string | null>(null);
   const [usingCache, setUsingCache] = useState(false);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const showBackendHint = apiBaseUrl === '/api' && (error?.includes('HTTP 500') || error?.toLowerCase().includes('failed to fetch'));
 
   const max = useMemo(() => Math.max(1, ...(data?.series?.map((p) => p.count) ?? [1])), [data]);
 
@@ -172,7 +180,7 @@ export default function HomeDashboard({
           setData(fallback);
           setUsingCache(true);
         }
-        setError(String((e as any)?.message || e));
+        setError(getErrorMessage(e));
       })
       .finally(() => {
         if (cancelled) return;
@@ -193,14 +201,12 @@ export default function HomeDashboard({
   }, [error]);
 
   useEffect(() => {
-    const handler = (ev: Event) => {
-      const detail = (ev as CustomEvent<{ timestampMs?: number }>).detail;
-      const ts = typeof detail?.timestampMs === 'number' ? detail.timestampMs : Date.now();
-      const bumped = bumpCached(range, ts);
+    const handler: EventListener = () => {
+      const bumped = bumpCached(range);
       if (bumped) setData(bumped);
     };
-    window.addEventListener('answer-submitted', handler as EventListener);
-    return () => window.removeEventListener('answer-submitted', handler as EventListener);
+    window.addEventListener('answer-submitted', handler);
+    return () => window.removeEventListener('answer-submitted', handler);
   }, [range]);
 
   return (
@@ -245,7 +251,25 @@ export default function HomeDashboard({
         )}
         {error && (
           <div role="alert" style={{ color: '#b91c1c', fontWeight: 800 }}>
-            Failed to load stats: {error}{usingCache ? ' (showing cached data)' : ''}
+            <div>
+              Failed to load stats: {error}{usingCache ? ' (showing cached data)' : ''}
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginTop: '8px' }}>
+              <span style={{ color: '#7f1d1d', fontWeight: 700 }}>
+                {showBackendHint ? 'Backend/proxy unavailable. Start backend on http://localhost:5005' : `API: ${apiBaseUrl}`}
+              </span>
+              <button
+                type="button"
+                className="home-button"
+                onClick={() => {
+                  setError(null);
+                  setRefreshNonce((n) => n + 1);
+                }}
+                style={{ padding: '8px 12px', fontWeight: 900 }}
+              >
+                Retry
+              </button>
+            </div>
           </div>
         )}
 
