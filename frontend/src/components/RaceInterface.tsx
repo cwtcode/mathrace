@@ -258,11 +258,11 @@ const RaceInterface: React.FC = () => {
         question = `${a}kg + ${b}kg`;
       }
     } else { // shape
-      const shapes = [
+      const shapes: Array<{ name: string; sides: number; vertices: number }> = [
         { name: 'Triangle', sides: 3, vertices: 3 },
         { name: 'Square', sides: 4, vertices: 4 },
         { name: 'Pentagon', sides: 5, vertices: 5 },
-        { name: 'Cube', faces: 6, vertices: 8 }
+        { name: 'Cube', sides: 0, vertices: 8 }
       ];
       const shape = shapes[Math.floor(Math.random() * shapes.length)];
       const askFor = Math.random() > 0.5 ? 'sides' : 'vertices';

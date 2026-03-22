@@ -1,50 +1,107 @@
-# React + TypeScript + Vite
+# Math Race (Math Racers)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Math Race is a gamified math practice web app for primary school learners (roughly ages 6–9). Players answer quick questions to move their racer forward, build combos, earn points, and unlock new characters while the difficulty adapts to performance.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Race-style practice with a ghost racer and time-limited questions
+- Strands: Number, Measures, Shape
+- Adaptive difficulty via a backend challenge engine
+- Points + combo streaks + character unlocks (saved locally)
+- Home and performance dashboards
+- Optional AI-generated session/analytics feedback via OpenRouter (backend)
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+- Frontend: React + TypeScript + Vite
+- Backend: Express + TypeScript
+- Shared types: [shared/challenge.ts]
 
-- Configure the top-level `parserOptions` property like this:
+## Getting Started (Local Dev)
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### Prerequisites
+
+- Node.js (recommended: latest LTS)
+
+### Install dependencies
+
+```bash
+cd backend
+npm install
+cd ../frontend
+npm install
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+### Run the backend
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+```bash
+cd backend
+npm run dev
 ```
+
+Backend defaults to `http://localhost:5005`.
+
+### Run the frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+Frontend defaults to `http://localhost:3000`. During development, the Vite server proxies `/api/*` to `http://localhost:5005` (see [vite.config.ts]).
+
+## Environment Variables
+
+### Backend
+
+Copy the example file and fill values as needed:
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+- `PORT` (default: `5005`)
+- `OPENROUTER_API_KEY` (optional; enables AI feedback endpoints)
+- `OPENROUTER_MODEL` (optional; default: `openrouter/free`)
+
+If `OPENROUTER_API_KEY` is missing, AI feedback falls back to a local message and question generation falls back to rule-based logic.
+
+### Frontend
+
+- `VITE_API_BASE_URL` (optional; default: `/api`)
+
+Use this when deploying the frontend without the dev proxy and you want to point at a separate backend URL.
+
+## Useful Scripts
+
+### Frontend
+
+```bash
+cd frontend
+npm run lint
+npm test
+npm run build
+```
+
+### Backend
+
+```bash
+cd backend
+npm run build
+node dist/index.js
+```
+
+## Backend API (Summary)
+
+Base path: `/api`
+
+- `GET /challenge/start?category=number|measures|shape`
+- `POST /challenge/next` (body: `{ state, isCorrect, category }`)
+- `POST /feedback/session` (AI feedback, optional)
+- `POST /feedback/analytics` (AI feedback, optional)
+- `GET /stats/answers?range=daily|weekly|monthly`
+- `POST /stats/answers` (records an answer event for stats)
+- `POST /analytics/answer` (records a detailed answer event)
+- `GET /analytics/summary`
+- `GET /analytics/export?format=json|csv`

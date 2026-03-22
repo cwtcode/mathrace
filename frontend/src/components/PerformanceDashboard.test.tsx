@@ -9,7 +9,7 @@ describe('PerformanceDashboard', () => {
   });
 
   it('renders summary and AI feedback', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: any, init?: any) => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes('/analytics/summary')) {
         return new Response(JSON.stringify({
@@ -25,7 +25,7 @@ describe('PerformanceDashboard', () => {
         return new Response(JSON.stringify({ feedback: 'Keep going!' }), { status: 200 });
       }
       return new Response('not found', { status: 404 });
-    }) as any);
+    }) as unknown as typeof fetch);
 
     render(<PerformanceDashboard apiBaseUrl="http://example.test/api" onBack={() => {}} />);
 
@@ -42,11 +42,13 @@ describe('PerformanceDashboard', () => {
   });
 
   it('exports csv when clicking export button', async () => {
-    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
-    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const createObjectURL = vi.fn(() => 'blob:mock');
+    const revokeObjectURL = vi.fn(() => {});
+    Object.defineProperty(URL, 'createObjectURL', { value: createObjectURL, configurable: true, writable: true });
+    Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectURL, configurable: true, writable: true });
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
-    vi.stubGlobal('fetch', vi.fn(async (input: any, init?: any) => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes('/analytics/summary')) {
         return new Response(JSON.stringify({
@@ -65,7 +67,7 @@ describe('PerformanceDashboard', () => {
         return new Response('timestampMs,questionType\n', { status: 200, headers: { 'Content-Type': 'text/csv' } });
       }
       return new Response('not found', { status: 404 });
-    }) as any);
+    }) as unknown as typeof fetch);
 
     render(<PerformanceDashboard apiBaseUrl="http://example.test/api" onBack={() => {}} />);
 
@@ -80,7 +82,7 @@ describe('PerformanceDashboard', () => {
   });
 
   it('refreshes on answer-submitted event', async () => {
-    const fetchSpy = vi.fn(async (input: any, init?: any) => {
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes('/analytics/summary')) {
         return new Response(JSON.stringify({
@@ -97,7 +99,7 @@ describe('PerformanceDashboard', () => {
       }
       return new Response('not found', { status: 404 });
     });
-    vi.stubGlobal('fetch', fetchSpy as any);
+    vi.stubGlobal('fetch', fetchSpy as unknown as typeof fetch);
 
     render(<PerformanceDashboard apiBaseUrl="http://example.test/api" onBack={() => {}} />);
 

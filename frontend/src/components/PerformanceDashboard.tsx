@@ -106,6 +106,7 @@ export default function PerformanceDashboard({
         const parsed = JSON.parse(cached) as { ts: number; data: AnalyticsSummaryResponse };
         if (Date.now() - parsed.ts < 30_000) setSummary(parsed.data);
       } catch {
+        localStorage.removeItem(cacheKey);
       }
     }
 
@@ -273,7 +274,23 @@ export default function PerformanceDashboard({
 
               <label style={{ display: 'grid', gap: '6px', fontWeight: 800, color: '#0f172a' }}>
                 Question Type
-                <select value={questionType} onChange={(e) => setQuestionType(e.target.value as any)} style={{ padding: '10px', borderRadius: '10px', border: '1px solid rgba(139, 30, 63, 0.28)', background: 'var(--seashell)', color: 'var(--ink)' }}>
+                <select
+                  value={questionType}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (
+                      value === 'all' ||
+                      value === 'fill_in_blank' ||
+                      value === 'multiple_choice' ||
+                      value === 'true_false' ||
+                      value === 'essay' ||
+                      value === 'unknown'
+                    ) {
+                      setQuestionType(value);
+                    }
+                  }}
+                  style={{ padding: '10px', borderRadius: '10px', border: '1px solid rgba(139, 30, 63, 0.28)', background: 'var(--seashell)', color: 'var(--ink)' }}
+                >
                   <option value="all">All</option>
                   <option value="fill_in_blank">fill-in-the-blank</option>
                   <option value="multiple_choice">multiple choice</option>
